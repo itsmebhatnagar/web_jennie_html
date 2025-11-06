@@ -64,6 +64,22 @@
     // === CONFIG ===
    const BACKEND_URL = "https://jennie-backend.onrender.com";
 
+   // Fetch and speak the greeting when page loads
+async function wishUser() {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/wish`);
+    const data = await res.json();
+    showResponse("Jennie:", data.response);
+    speak(data.response);
+  } catch (err) {
+    console.error("Greeting fetch failed:", err);
+  }
+}
+
+// Call it once when the page loads
+window.onload = wishUser;
+
+
 
     const voiceCircle = document.getElementById('voiceCircle');
     const statusText = document.getElementById('statusText');
@@ -143,6 +159,8 @@ if (data.action) {
   if (data.action === "open_google") window.open("https://www.google.com", "_blank");
   if (data.action === "open_flipkart") window.open("https://www.flipkart.com", "_blank");
   if (data.action === "open_amazon") window.open("https://www.amazon.in", "_blank");
+  if (data.action === "open_chatgpt") window.open("https://www.chatgpt.com", "_blank");
+  
 }
 
     };
