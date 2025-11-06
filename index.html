@@ -126,9 +126,25 @@
       transcriptText.textContent = transcript;
       showResponse("You said:", transcript);
 
-      const backendReply = await callBackend(transcript);
-      showResponse("Jennie:", backendReply);
-      speak(backendReply);
+      const res = await fetch(`${BACKEND_URL}/api/command`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ query: transcript })
+});
+const data = await res.json();
+
+// Show and speak the response text
+showResponse("Jennie:", data.response);
+speak(data.response);
+
+// Perform the action if backend requests it
+if (data.action) {
+  if (data.action === "open_youtube") window.open("https://www.youtube.com", "_blank");
+  if (data.action === "open_google") window.open("https://www.google.com", "_blank");
+  if (data.action === "open_flipkart") window.open("https://www.flipkart.com", "_blank");
+  if (data.action === "open_amazon") window.open("https://www.amazon.in", "_blank");
+}
+
     };
 
     voiceCircle.onclick = () => {
