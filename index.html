@@ -99,23 +99,26 @@
     }
 
     async function callBackend(query) {
-      try {
-        statusText.textContent = "Talking to Jennie backend...";
-        const res = await fetch(`${BACKEND_URL}/api/command`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query })
-        });
-        if (!res.ok) throw new Error("Network error");
-        const data = await res.json();
-        return data.response || "No response";
-      } catch (err) {
-        console.error(err);
-        return "Backend not reachable right now.";
-      } finally {
-        statusText.textContent = "Tap to Start Listening";
-      }
-    }
+  console.log("📡 Sending to backend:", query);
+  try {
+    statusText.textContent = "Talking to Jennie backend...";
+    const res = await fetch(`${BACKEND_URL}/api/command`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query })
+    });
+    console.log("🌐 Response status:", res.status);
+    if (!res.ok) throw new Error("Network error");
+    const data = await res.json();
+    console.log("✅ Backend JSON:", data);
+    return data.response || "No response";
+  } catch (err) {
+    console.error("❌ Fetch error:", err);
+    return "Backend not reachable right now.";
+  } finally {
+    statusText.textContent = "Tap to Start Listening";
+  }
+}
 
     recognition.onresult = async (event) => {
       const transcript = event.results[event.results.length - 1][0].transcript.trim();
