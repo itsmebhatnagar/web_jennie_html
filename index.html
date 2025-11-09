@@ -42,6 +42,73 @@
     .transcript-text { font-size: 18px; opacity: 0.8; margin-bottom: 20px; }
     .response-card { display: none; background: rgba(255, 255, 255, 0.2); border-radius: 15px; padding: 20px; }
     .response-card.show { display: block; }
+
+    /* === Commands Button and Modal === */
+    #commandsBtn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: 0.3s;
+    }
+    #commandsBtn:hover { transform: scale(1.1); }
+
+    #commandsModal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .commands-content {
+      background: white;
+      color: #333;
+      padding: 20px;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 400px;
+      text-align: left;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      animation: popIn 0.3s ease;
+    }
+    .commands-content h2 {
+      text-align: center;
+      color: #764ba2;
+    }
+    .commands-content ul {
+      list-style: none;
+      padding: 0;
+    }
+    .commands-content li {
+      margin: 10px 0;
+      font-size: 16px;
+    }
+    #closeModal {
+      display: block;
+      margin: 10px auto 0;
+      background: #764ba2;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
   </style>
 </head>
 <body>
@@ -60,11 +127,29 @@
     </div>
   </div>
 
+  <!-- Commands Button -->
+  <button id="commandsBtn">🧠 Commands</button>
+
+  <!-- Commands Modal -->
+  <div id="commandsModal">
+    <div class="commands-content">
+      <h2>✨ Jennie’s Commands</h2>
+      <ul>
+        <li>📺 “Open YouTube”</li>
+        <li>� “Open Google”</li>
+        <li>🛒 “Open Flipkart”</li>
+        <li>🛒 “Open Amazon”</li>
+        <li>💬 “Open Chatgpt”</li>
+        <li>🎵 “Open Spotify”</li>
+        <li>🔍 “Search on Wikipedia [topic]”</li>
+      </ul>
+      <button id="closeModal">Close</button>
+    </div>
+  </div>
+
   <script>
-    // === CONFIG ===
     const BACKEND_URL = "https://jennie-backend.onrender.com";
 
-    // === INITIAL GREETING ===
     async function wishUser() {
       try {
         const res = await fetch(`${BACKEND_URL}/api/wish`);
@@ -77,7 +162,6 @@
     }
     window.onload = wishUser;
 
-    // === DOM ELEMENTS ===
     const voiceCircle = document.getElementById('voiceCircle');
     const statusText = document.getElementById('statusText');
     const transcriptText = document.getElementById('transcriptText');
@@ -85,7 +169,6 @@
     const responseTitle = document.getElementById('responseTitle');
     const responseContent = document.getElementById('responseContent');
 
-    // === SPEECH RECOGNITION ===
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       statusText.textContent = 'Speech recognition not supported';
@@ -112,7 +195,6 @@
       responseCard.classList.add('show');
     }
 
-    // === BACKEND CALL ===
     async function callBackend(query) {
       try {
         statusText.textContent = "Talking to Jennie backend...";
@@ -132,17 +214,13 @@
       }
     }
 
-    // === MAIN VOICE HANDLER ===
     recognition.onresult = async (event) => {
       const transcript = event.results[event.results.length - 1][0].transcript.trim();
       transcriptText.textContent = transcript;
       showResponse("You said:", transcript);
 
-      // ---- NEW FEATURE: Wikipedia Search ----
       if (transcript.toLowerCase().includes("wikipedia")) {
-        const topic = transcript
-          .replace(/search|on|in|open|wikipedia/gi, "")
-          .trim();
+        const topic = transcript.replace(/search|on|in|open|wikipedia/gi, "").trim();
         if (topic) {
           const wikiUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(topic)}`;
           speak(`Opening ${topic} on Wikipedia`);
@@ -156,12 +234,10 @@
         }
       }
 
-      // ---- OTHERWISE, SEND TO BACKEND ----
       const data = await callBackend(transcript);
       showResponse("Jennie:", data.response);
       speak(data.response);
 
-      // Perform action if backend specifies
       if (data.action) {
         const urls = {
           open_youtube: "https://www.youtube.com",
@@ -184,6 +260,14 @@
     recognition.onend = () => {
       statusText.textContent = "Tap to Start Listening";
     };
+
+    // === Commands Modal Script ===
+    const modal = document.getElementById("commandsModal");
+    const btn = document.getElementById("commandsBtn");
+    const closeBtn = document.getElementById("closeModal");
+    btn.onclick = () => (modal.style.display = "flex");
+    closeBtn.onclick = () => (modal.style.display = "none");
+    window.onclick = (e) => { if (e.target === modal) modal.style.display = "none"; };
   </script>
 </body>
 </html>
