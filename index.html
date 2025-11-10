@@ -136,12 +136,13 @@
       <h2>✨ Jennie’s Commands</h2>
       <ul>
         <li>📺 “Open YouTube”</li>
-        <li>� “Open Google”</li>
+        <li>🌐 “Open Google”</li>
         <li>🛒 “Open Flipkart”</li>
         <li>🛒 “Open Amazon”</li>
-        <li>💬 “Open Chatgpt”</li>
+        <li>💬 “Open ChatGPT”</li>
         <li>🎵 “Open Spotify”</li>
         <li>🔍 “Search on Wikipedia [topic]”</li>
+        <li>🕒 “Remind me to [task] in [minutes/hours]”</li>
       </ul>
       <button id="closeModal">Close</button>
     </div>
@@ -150,35 +151,12 @@
   <script>
     const BACKEND_URL = "https://jennie-backend.onrender.com";
 
-    async function wishUser() {
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/wish`);
-        const data = await res.json();
-        showResponse("Jennie:", data.response);
-        speak(data.response);
-      } catch (err) {
-        console.error("Greeting fetch failed:", err);
-      }
-    }
-    window.onload = wishUser;
-
     const voiceCircle = document.getElementById('voiceCircle');
     const statusText = document.getElementById('statusText');
     const transcriptText = document.getElementById('transcriptText');
     const responseCard = document.getElementById('responseCard');
     const responseTitle = document.getElementById('responseTitle');
     const responseContent = document.getElementById('responseContent');
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      statusText.textContent = 'Speech recognition not supported';
-      throw new Error('SpeechRecognition not supported');
-    }
-
-    let recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
-    recognition.interimResults = false;
-    recognition.continuous = false;
 
     function speak(text) {
       if ('speechSynthesis' in window) {
@@ -195,6 +173,17 @@
       responseCard.classList.add('show');
     }
 
+    async function wishUser() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/wish`);
+        const data = await res.json();
+        showResponse("Jennie:", data.response);
+        speak(data.response);
+      } catch (err) {
+        console.error("Greeting fetch failed:", err);
+      }
+    }
+
     async function callBackend(query) {
       try {
         statusText.textContent = "Talking to Jennie backend...";
@@ -203,22 +192,33 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ query })
         });
-        if (!res.ok) throw new Error("Network error");
         const data = await res.json();
         return data;
-      } catch (err) {
-        console.error("❌ Fetch error:", err);
+      } catch {
         return { response: "Backend not reachable right now." };
       } finally {
         statusText.textContent = "Tap to Start Listening";
       }
     }
 
+    // === Speech Recognition ===
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      statusText.textContent = 'Speech recognition not supported';
+      throw new Error('SpeechRecognition not supported');
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.continuous = false;
+
     recognition.onresult = async (event) => {
-      const transcript = event.results[event.results.length - 1][0].transcript.trim();
+      const transcript = event.results[0][0].transcript.trim();
       transcriptText.textContent = transcript;
       showResponse("You said:", transcript);
 
+      // Handle Wikipedia
       if (transcript.toLowerCase().includes("wikipedia")) {
         const topic = transcript.replace(/search|on|in|open|wikipedia/gi, "").trim();
         if (topic) {
@@ -227,10 +227,6 @@
           showResponse("Jennie:", `Opening <b>${topic}</b> on Wikipedia...`);
           window.open(wikiUrl, "_blank");
           return;
-        } else {
-          speak("Please tell me what to search on Wikipedia.");
-          showResponse("Jennie:", "Please tell me what to search on Wikipedia.");
-          return;
         }
       }
 
@@ -238,17 +234,23 @@
       showResponse("Jennie:", data.response);
       speak(data.response);
 
-      if (data.action) {
-        const urls = {
-          open_youtube: "https://www.youtube.com",
-          open_google: "https://www.google.com",
-          open_flipkart: "https://www.flipkart.com",
-          open_amazon: "https://www.amazon.in",
-          open_chatgpt: "https://www.chatgpt.com",
-          open_spotify: "https://open.spotify.com"
-        };
-        if (urls[data.action]) window.open(urls[data.action], "_blank");
+      // Handle actions
+      const urls = {
+        open_youtube: "https://www.youtube.com",
+        open_google: "https://www.google.com",
+        open_flipkart: "https://www.flipkart.com",
+        open_amazon: "https://www.amazon.in",
+        open_chatgpt: "https://www.chat.openai.com",
+        open_spotify: "https://open.spotify.com"
+      };
+      if (data.action && urls[data.action]) {
+        window.open(urls[data.action], "_blank");
+      } else if (data.action === "search_google") {
+        const encoded = encodeURIComponent(data.query || transcript);
+        window.open(`https://www.google.com/search?q=${encoded}`, "_blank");
       }
+
+      loadHistory();
     };
 
     voiceCircle.onclick = () => {
@@ -261,7 +263,65 @@
       statusText.textContent = "Tap to Start Listening";
     };
 
-    // === Commands Modal Script ===
+    // === Chat History ===
+    async function loadHistory() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/last_queries`);
+        const arr = await res.json();
+        const html = arr.map(a => `<div>${new Date(a.time).toLocaleTimeString()}: ${a.query}</div>`).join("");
+        let panel = document.getElementById("historyPanel");
+        if (!panel) {
+          panel = document.createElement("div");
+          panel.id = "historyPanel";
+          panel.style.position = "fixed";
+          panel.style.left = "20px";
+          panel.style.bottom = "20px";
+          panel.style.background = "rgba(255,255,255,0.1)";
+          panel.style.padding = "8px";
+          panel.style.borderRadius = "8px";
+          panel.style.maxWidth = "260px";
+          panel.style.fontSize = "12px";
+          panel.style.color = "#fff";
+          document.body.appendChild(panel);
+        }
+        panel.innerHTML = `<strong>Recent:</strong><br/>${html}`;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // === Notifications / Reminders ===
+    async function ensureNotificationPermission() {
+      if ("Notification" in window && Notification.permission === "default") {
+        await Notification.requestPermission();
+      }
+    }
+
+    async function pollReminders() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/reminders/due`);
+        const due = await res.json();
+        for (const r of due) {
+          if (Notification.permission === "granted") {
+            new Notification("Jennie Reminder", { body: r.text });
+          }
+          speak(`Reminder: ${r.text}`);
+        }
+      } catch (e) {
+        console.error("Poll error", e);
+      }
+    }
+
+    // === Initialize ===
+    window.onload = async () => {
+      await wishUser();
+      await loadHistory();
+      await ensureNotificationPermission();
+      pollReminders();
+      setInterval(pollReminders, 60000);
+    };
+
+    // === Commands Modal ===
     const modal = document.getElementById("commandsModal");
     const btn = document.getElementById("commandsBtn");
     const closeBtn = document.getElementById("closeModal");
