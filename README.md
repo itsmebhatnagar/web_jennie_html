@@ -28,7 +28,7 @@ It listens to your voice commands, responds using speech synthesis, and performs
 | "Open Amazon" | Opens Amazon |
 | "Open ChatGPT" | Opens ChatGPT |
 | "Open Spotify" | Opens Spotify |
-| "Search on Wikipedia Elon Musk" | Opens Wikipedia for Elon Musk |
+| "Search on Wikipedia (topic)" | Opens Wikipedia for (topic) |
 | "My name is [Your Name]" | Saves your name |
 | "What is my name" | Recalls saved name |
 
