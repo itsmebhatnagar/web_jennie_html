@@ -330,5 +330,18 @@
     closeBtn.onclick = () => (modal.style.display = "none");
     window.onclick = (e) => { if (e.target === modal) modal.style.display = "none"; };
   </script>
+
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#ff66cc">
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(reg => console.log('SW registered', reg))
+      .catch(err => console.log('SW register failed', err));
+  });
+}
+</script>
 </body>
 </html>
