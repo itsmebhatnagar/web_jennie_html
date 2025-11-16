@@ -1,35 +1,155 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JENNIE Voice Assistant</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jennie - Voice Assistant</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+    }
+    .assistant-container {
+      text-align: center;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 25px;
+      padding: 40px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      width: 320px;
+    }
+    .voice-circle {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 30px;
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+    .voice-circle:hover { transform: scale(1.1); }
+    .mic-icon { width: 60px; height: 60px; fill: white; }
+    .status-text { font-size: 22px; margin-bottom: 10px; }
+    .transcript-text { font-size: 18px; opacity: 0.8; margin-bottom: 20px; }
+    .response-card { display: none; background: rgba(255, 255, 255, 0.2); border-radius: 15px; padding: 20px; }
+    .response-card.show { display: block; }
+
+    /* === Commands Button and Modal === */
+   #commandsBtn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: 0.3s; 
+    }
+    #commandsBtn:hover { transform: scale(1.1); }
+
+    #commandsModal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .commands-content {
+      background: rgb(20, 20, 20);
+      color: #333;
+      padding: 20px;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 400px;
+      text-align: left;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      animation: popIn 0.3s ease;
+    }
+    .commands-content h2 {
+      text-align: center;
+      color: #764ba2;
+    }
+    .commands-content ul {
+      list-style: none;
+      padding: 0;
+    }
+    .commands-content li {
+      margin: 10px 0;
+      font-size: 16px;
+    }
+    #closeModal {
+      display: block;
+      margin: 10px auto 0;
+      background: #764ba2;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <canvas id="sphere-canvas"></canvas>
-        <div class="content">
-            <div class="header">
-                <h1>Jennie</h1>
-            </div>
-            <div class="chat-container">
-                <div id="chat-messages" class="chat-messages">
-                    <!-- Messages will appear here -->
-                </div>
-            </div>
-            <div class="controls">
-                <button id="voice-btn" class="voice-button">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 1v8m0 0v6m0-6h6m-6 0H6m6 12v3m-4 0h8"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
+  <div class="assistant-container">
+    <div class="voice-circle" id="voiceCircle">
+      <svg class="mic-icon" viewBox="0 0 24 24">
+        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+      </svg>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="script.js"></script>
-    <script>
+    <div class="status-text" id="statusText">Tap to Start Listening</div>
+    <div class="transcript-text" id="transcriptText"></div>
+    <div class="response-card" id="responseCard">
+      <div id="responseTitle"></div>
+      <div id="responseContent"></div>
+    </div>
+  </div>
+
+  <!-- Commands Button -->
+  <button id="commandsBtn">🧠 Commands</button>
+
+  <!-- Commands Modal -->
+  <div id="commandsModal">
+    <div class="commands-content">
+      <h2>✨ Jennie’s Commands</h2>
+      <ul>
+        <li>📺 “Open YouTube”</li>
+        <li>🌐 “Open Google”</li>
+        <li>🛒 “Open Flipkart”</li>
+        <li>🛒 “Open Amazon”</li>
+        <li>💬 “Open ChatGPT”</li>
+        <li>🎵 “Open Spotify”</li>
+        <li>🔍 “Search on Wikipedia [topic]”</li>
+        <li>🕒 “Remind me to [task] in [minutes/hours]”</li>
+        <li>🔍 “Search the web for [topic]”</li>
+      </ul>
+      <button id="closeModal">Close</button>
+    </div>
+  </div>
+
+  <script>
     const BACKEND_URL = "https://jennie-backend.onrender.com";
 
     const voiceCircle = document.getElementById('voiceCircle');
@@ -210,6 +330,8 @@
     closeBtn.onclick = () => (modal.style.display = "none");
     window.onclick = (e) => { if (e.target === modal) modal.style.display = "none"; };
   </script>
+
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#ff66cc">
 </body>
 </html>
-
